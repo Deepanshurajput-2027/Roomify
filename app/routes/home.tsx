@@ -3,6 +3,8 @@ import type { Route } from "./+types/home";
 import { ArrowRight, ArrowUpRight, Clock } from "lucide-react";
 import { Button } from "components/ui/Button";
 import { Layers } from "lucide-react";
+import Upload from "components/ui/Upload";
+import { useNavigate } from "react-router";
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -12,6 +14,13 @@ export function meta({ }: Route.MetaArgs) {
 }
 
 export default function Home() {
+  const navigate = useNavigate();
+
+  const handleUploadComplete = async (base64Image: string) => {
+    const newId = Date.now().toString();
+    navigate(`/visualizer/${newId}`);
+  }
+
   return (
     <div className="home">
       <Navbar />
@@ -33,15 +42,15 @@ export default function Home() {
 
         <div className="upload-shell" id="upload">
           <div className="grid-overlay" />
-            <div className="upload-card">
-              <div className="upload-head">
-                <div className="upload-icon">
-                  <Layers  className="icon"/>
-                </div>
-                <h3>Upload your floor plan</h3>
-                <p>Supports JPG, PNG, formats up to 10MB</p>
+          <div className="upload-card">
+            <div className="upload-head">
+              <div className="upload-icon">
+                <Layers className="icon" />
+              </div>
+              <h3>Upload your floor plan</h3>
+              <p>Supports JPG, PNG, formats up to 10MB</p>
             </div>
-            <p>Upload images</p>
+            <Upload onComplete={handleUploadComplete} />
           </div>
         </div>
       </section>
@@ -66,15 +75,15 @@ export default function Home() {
               </div>
               <div className="card-body">
                 <div>
-                  <h3>Project Manhattan</h3>
+                  <h3>Project NamoHousing</h3>
                   <div className="meta">
-                    <Clock size={12}/>
+                    <Clock size={12} />
                     <span>{new Date('01.01.2027').toLocaleDateString()}</span>
                     <span>By Deepanshu Rajput</span>
                   </div>
                 </div>
                 <div className="arrow">
-                  <ArrowUpRight size={18}/>
+                  <ArrowUpRight size={18} />
                 </div>
               </div>
             </div>
