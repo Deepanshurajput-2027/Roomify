@@ -1,7 +1,7 @@
 import React from 'react'
 import { useOutletContext } from 'react-router';
 import { CheckCircle2, UploadIcon, ImageIcon, XCircle } from 'lucide-react';
-import { PROGRESS_INTERVAL_MS, PROGRESS_STEP, REDIRECT_DELAY_MS, MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES } from '../../lib/constants';
+import { PROGRESS_INTERVAL_MS, PROGRESS_STEP, REDIRECT_DELAY_MS, MAX_FILE_SIZE_BYTES } from '../../lib/constants';
 
 interface UploadProps {
     onComplete?: (file: string) => void;
@@ -58,8 +58,8 @@ const Upload = ({ onComplete }: UploadProps) => {
         setError(null);
 
         // Validate file type
-        if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-            setError("Invalid file type. Please upload a JPG or PNG image.");
+        if (!file.type.startsWith('image/')) {
+            setError("Invalid file type. Please upload a valid image.");
             return;
         }
 
@@ -111,7 +111,7 @@ const Upload = ({ onComplete }: UploadProps) => {
                         <input
                             type="file"
                             className='drop-input'
-                            accept=".jpg,.png,.jpeg"
+                            accept="image/*"
                             disabled={!isSignedIn}
                             onChange={handleFileChange}
                         />
