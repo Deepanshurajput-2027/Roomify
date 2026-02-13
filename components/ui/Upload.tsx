@@ -1,7 +1,7 @@
 import React from 'react'
 import { useOutletContext } from 'react-router';
-import { CheckCircle2, UploadIcon, ImageIcon } from 'lucide-react';
-import { PROGRESS_INTERVAL_MS, PROGRESS_STEP, REDIRECT_DELAY_MS } from '../../lib/constants';
+import { CheckCircle2, UploadIcon, ImageIcon, XCircle } from 'lucide-react';
+import { PROGRESS_INTERVAL_MS, PROGRESS_STEP, REDIRECT_DELAY_MS, MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES } from '../../lib/constants';
 
 interface UploadProps {
     onComplete?: (file: string) => void;
@@ -13,6 +13,17 @@ const Upload = ({ onComplete }: UploadProps) => {
     const [file, setFile] = React.useState<File | null>(null);
     const [isDragging, setIsDragging] = React.useState(false);
     const [progress, setProgress] = React.useState(0);
+    const [error, setError] = React.useState<string | null>(null);
+
+    const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
+    const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+    React.useEffect(() => {
+        return () => {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        };
+    }, []);
 
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
@@ -44,6 +55,24 @@ const Upload = ({ onComplete }: UploadProps) => {
     };
 
     const processFile = (file: File) => {
+        setError(null);
+
+        // Validate file type
+        if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+            setError("Invalid file type. Please upload a JPG or PNG image.");
+            return;
+        }
+
+        // Validate file size
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+            setError(`File is too large. Maximum size is ${MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB.`);
+            return;
+        }
+
+        // Clear existing timers
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
         setFile(file);
         setProgress(0);
 
@@ -51,12 +80,13 @@ const Upload = ({ onComplete }: UploadProps) => {
         reader.onload = (e) => {
             const base64 = e.target?.result as string;
 
-            const interval = setInterval(() => {
+            intervalRef.current = setInterval(() => {
                 setProgress((prev) => {
                     const next = prev + PROGRESS_STEP;
                     if (next >= 100) {
-                        clearInterval(interval);
-                        setTimeout(() => {
+                        if (intervalRef.current) clearInterval(intervalRef.current);
+
+                        timeoutRef.current = setTimeout(() => {
                             if (onComplete) onComplete(base64);
                         }, REDIRECT_DELAY_MS);
                         return 100;
@@ -73,7 +103,7 @@ const Upload = ({ onComplete }: UploadProps) => {
             {
                 !file ? (
                     <div
-                        className={`dropzone ${isDragging ? 'is-dragging' : ''}`}
+                        className={`dropzone ${isDragging ? 'is-dragging' : ''} ${error ? 'has-error' : ''}`}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
@@ -87,13 +117,13 @@ const Upload = ({ onComplete }: UploadProps) => {
                         />
 
                         <div className="drop-content">
-                            <div className="drop-icon">
-                                <UploadIcon size={20} />
+                            <div className={`drop-icon ${error ? 'text-red-500' : ''}`}>
+                                {error ? <XCircle size={24} className="text-red-500" /> : <UploadIcon size={20} />}
                             </div>
-                            <p>
-                                {isSignedIn ? ("Click to upload or just drag and drop") : ("Sign in or sign up with Puter to upload your floor plan")}
+                            <p className={error ? "text-red-500 font-medium" : ""}>
+                                {error ? error : (isSignedIn ? "Click to upload or just drag and drop" : "Sign in or sign up with Puter to upload your floor plan")}
                             </p>
-                            <p className='help'>Maximum file size 50 MB.</p>
+                            <p className='help'>Maximum file size {MAX_FILE_SIZE_BYTES / (1024 * 1024)} MB.</p>
                         </div>
                     </div>
                 ) : (
