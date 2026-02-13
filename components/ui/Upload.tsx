@@ -4,7 +4,7 @@ import { CheckCircle2, UploadIcon, ImageIcon, XCircle } from 'lucide-react';
 import { PROGRESS_INTERVAL_MS, PROGRESS_STEP, REDIRECT_DELAY_MS, MAX_FILE_SIZE_BYTES } from '../../lib/constants';
 
 interface UploadProps {
-    onComplete?: (file: string) => void;
+    onComplete?: (file: string) => Promise<any> | void | boolean;
 }
 
 const Upload = ({ onComplete }: UploadProps) => {
@@ -86,8 +86,19 @@ const Upload = ({ onComplete }: UploadProps) => {
                     if (next >= 100) {
                         if (intervalRef.current) clearInterval(intervalRef.current);
 
-                        timeoutRef.current = setTimeout(() => {
-                            if (onComplete) onComplete(base64);
+                        timeoutRef.current = setTimeout(async () => {
+                            if (onComplete) {
+                                try {
+                                    const result = await onComplete(base64);
+                                    if (result === false) {
+                                        throw new Error("Upload failed");
+                                    }
+                                } catch (e) {
+                                    setError("Failed to upload project. Please try again.");
+                                    setProgress(0);
+                                    setFile(null);
+                                }
+                            }
                         }, REDIRECT_DELAY_MS);
                         return 100;
                     }

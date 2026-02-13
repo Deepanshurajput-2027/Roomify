@@ -31,11 +31,11 @@ export default function Home() {
       timestamp: Date.now(),
     }
 
-    const saved = await createProject({ item: newItem, visibility: "private" });
+    let saved = await createProject({ item: newItem, visibility: "private" });
 
     if (!saved) {
-      console.log("Failed to create project");
-      return false;
+      console.warn("Failed to save projectremotely. Proceeding with local state.");
+      saved = newItem;
     }
 
     setProjects((prev) => [newItem, ...prev]);
