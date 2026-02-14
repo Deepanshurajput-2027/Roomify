@@ -18,6 +18,8 @@ const Upload = ({ onComplete }: UploadProps) => {
     const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
     const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
+    const isCompleteCalled = React.useRef(false);
+
     React.useEffect(() => {
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
@@ -27,7 +29,7 @@ const Upload = ({ onComplete }: UploadProps) => {
 
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
-        if (isSignedIn) setIsDragging(true);
+        setIsDragging(true);
     };
 
     const handleDragLeave = (e: React.DragEvent) => {
@@ -38,7 +40,6 @@ const Upload = ({ onComplete }: UploadProps) => {
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(false);
-        if (!isSignedIn) return;
 
         const droppedFile = e.dataTransfer.files[0];
         if (droppedFile) {
@@ -47,7 +48,6 @@ const Upload = ({ onComplete }: UploadProps) => {
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!isSignedIn) return;
         const selectedFile = e.target.files?.[0];
         if (selectedFile) {
             processFile(selectedFile);
@@ -75,6 +75,7 @@ const Upload = ({ onComplete }: UploadProps) => {
 
         setFile(file);
         setProgress(0);
+        isCompleteCalled.current = false;
 
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -86,20 +87,23 @@ const Upload = ({ onComplete }: UploadProps) => {
                     if (next >= 100) {
                         if (intervalRef.current) clearInterval(intervalRef.current);
 
-                        timeoutRef.current = setTimeout(async () => {
-                            if (onComplete) {
-                                try {
-                                    const result = await onComplete(base64);
-                                    if (result === false) {
-                                        throw new Error("Upload failed");
+                        if (!isCompleteCalled.current) {
+                            isCompleteCalled.current = true;
+                            timeoutRef.current = setTimeout(async () => {
+                                if (onComplete) {
+                                    try {
+                                        const result = await onComplete(base64);
+                                        if (result === false) {
+                                            throw new Error("Upload failed");
+                                        }
+                                    } catch (e) {
+                                        setError("Failed to upload project. Please try again.");
+                                        setProgress(0);
+                                        setFile(null);
                                     }
-                                } catch (e) {
-                                    setError("Failed to upload project. Please try again.");
-                                    setProgress(0);
-                                    setFile(null);
                                 }
-                            }
-                        }, REDIRECT_DELAY_MS);
+                            }, REDIRECT_DELAY_MS);
+                        }
                         return 100;
                     }
                     return next;
@@ -123,7 +127,6 @@ const Upload = ({ onComplete }: UploadProps) => {
                             type="file"
                             className='drop-input'
                             accept="image/*"
-                            disabled={!isSignedIn}
                             onChange={handleFileChange}
                         />
 
@@ -132,7 +135,7 @@ const Upload = ({ onComplete }: UploadProps) => {
                                 {error ? <XCircle size={24} className="text-red-500" /> : <UploadIcon size={20} />}
                             </div>
                             <p className={error ? "text-red-500 font-medium" : ""}>
-                                {error ? error : (isSignedIn ? "Click to upload or just drag and drop" : "Sign in or sign up with Puter to upload your floor plan")}
+                                {error ? error : "Click to upload or just drag and drop"}
                             </p>
                             <p className='help'>Maximum file size {MAX_FILE_SIZE_BYTES / (1024 * 1024)} MB.</p>
                         </div>
