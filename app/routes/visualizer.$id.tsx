@@ -94,8 +94,14 @@ const VisualizerId = () => {
 
             if (!isMounted) return;
 
+            if (!fetchedProject) {
+                // Keep existing state (e.g. from location.state) if fetch fails/returns null
+                setIsProjectLoading(false);
+                return;
+            }
+
             setProject(fetchedProject);
-            setCurrentImage(fetchedProject?.renderedImage || null);
+            setCurrentImage(fetchedProject.renderedImage || null);
             setIsProjectLoading(false);
             hasInitialGenerated.current = false;
         };
