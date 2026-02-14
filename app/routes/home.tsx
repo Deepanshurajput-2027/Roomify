@@ -4,7 +4,7 @@ import { ArrowRight, ArrowUpRight, Clock } from "lucide-react";
 import { Button } from "components/ui/Button";
 import { Layers } from "lucide-react";
 import Upload from "components/ui/Upload";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useEffect, useRef, useState } from "react";
 import { createProject, getProjects } from "../../lib/puter.action";
 
@@ -22,9 +22,10 @@ export default function Home() {
 
   const handleUploadComplete = async (base64Image: string) => {
 
+    if (isCreatingProjectRef.current) return true;
+    isCreatingProjectRef.current = true;
+
     try {
-      if (isCreatingProjectRef.current) return true;
-      isCreatingProjectRef.current = true;
       const newId = Date.now().toString();
       const name = `Residence ${newId}`
 
@@ -43,7 +44,7 @@ export default function Home() {
         saved = newItem;
       }
 
-      setProjects((prev) => [newItem, ...prev]);
+      setProjects((prev) => [saved!, ...prev]);
 
       navigate(`/visualizer/${newId}`, {
         state: {
@@ -58,13 +59,13 @@ export default function Home() {
     }
   }
 
-  useEffect(()=>{
-    const fetchProjects=async ()=>{
-      const items=await getProjects();
+  useEffect(() => {
+    const fetchProjects = async () => {
+      const items = await getProjects();
       setProjects(items);
     }
     fetchProjects();
-  },[])
+  }, [])
 
   return (
     <div className="home">
@@ -112,7 +113,7 @@ export default function Home() {
           <div className="projects-grid">
             {
               projects.map(({ id, name, renderedImage, sourceImage, timestamp }) => (
-                <div key={id} className="project-card group" onClick={()=>navigate(`/visualizer/${id}`)}>
+                <Link key={id} to={`/visualizer/${id}`} className="project-card group">
                   <div className="preview">
                     <img src={renderedImage || sourceImage} alt={name || "Project"} />
                     <div className="badge">
@@ -131,7 +132,7 @@ export default function Home() {
                       <ArrowUpRight size={18} />
                     </div>
                   </div>
-                </div>
+                </Link>
               ))
             }
 

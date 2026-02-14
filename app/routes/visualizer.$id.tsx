@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { generate3DView } from "lib/ai.action";
 import { Box, Download, RefreshCcw, Share2, X } from "lucide-react";
 import { Button } from "components/ui/Button";
+import { ReactCompareSlider, ReactCompareSliderImage } from "react-compare-slider";
 
 
 export async function loader({ params }: any) {
@@ -94,8 +95,14 @@ const VisualizerId = () => {
 
             if (!isMounted) return;
 
+            if (!fetchedProject) {
+                // Keep existing state (e.g. from location.state) if fetch fails/returns null
+                setIsProjectLoading(false);
+                return;
+            }
+
             setProject(fetchedProject);
-            setCurrentImage(fetchedProject?.renderedImage || null);
+            setCurrentImage(fetchedProject.renderedImage || null);
             setIsProjectLoading(false);
             hasInitialGenerated.current = false;
         };
@@ -125,6 +132,17 @@ const VisualizerId = () => {
         void runGeneration(project);
     }, [project, isProjectLoading]);
 
+    const handleExport = () => {
+        if (!currentImage) return;
+
+        const link = document.createElement("a");
+        link.href = currentImage;
+        link.download = `roomify-${id || "visualizer"}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
 
     return (
         <div className="visualizer">
@@ -150,7 +168,7 @@ const VisualizerId = () => {
                             <p className="note">Created by You</p>
                         </div>
                         <div className="panel-actions">
-                            <Button size="sm" onClick={() => { }} className="export" disabled={!currentImage} >
+                            <Button size="sm" onClick={handleExport} className="export" disabled={!currentImage} >
                                 <Download className="w-4 h-4 mr-2 icon" /> Export
                             </Button>
                             <Button size="sm" onClick={() => { }} className="share" >
@@ -180,6 +198,40 @@ const VisualizerId = () => {
                                 </div>
                             </div>
                         )}
+                    </div>
+                </div>
+
+                <div className="panel compare">
+                    <div className="panel-header">
+                        <div className="panel-meta">
+                            <p>Comparison</p>
+                            <h3>Before and After</h3>
+                        </div>
+                        <div className="hint">Drag to Compare</div>
+                    </div>
+                    <div className="compare-stage">
+                        {
+                            project?.sourceImage && currentImage ? (
+                                <ReactCompareSlider
+                                    defaultValue={50}
+                                    style={{ width: '100%', height: 'auto' }}
+                                    itemOne={
+                                        <ReactCompareSliderImage src={project?.sourceImage} alt="before" className="compare-img" />
+                                    }
+                                    itemTwo={
+                                        <ReactCompareSliderImage src={currentImage!} alt="after" className="compare-img" />
+                                    }
+                                />
+                            ) : (
+                                <div className="compare-fallback">
+                                    {
+                                        project?.sourceImage && (
+                                            <img src={project?.sourceImage} alt="Before" className="compare-img" />
+                                        )
+                                    }
+                                </div>
+                            )
+                        }
                     </div>
                 </div>
             </section>
